@@ -23,7 +23,7 @@ pip install numpy imutils matplotlib
 ## 使用说明
 Firstly, find and record RoI of each segement number on the template:
 ```bash
-python3 scripts/find_roi.py
+python3 scripts/find_roi.py --img template/Segment_digital_tube_number_with_dot.png
 ```
 
 <div style="text-align: center;">
@@ -36,3 +36,7 @@ Then check if the number is extracted correctly. (轮廓中心在RoI就行)
   <img src="images/read_me_image2.png" alt="extracted_number" width="800">
 </div>
 
+## 识别
+```bash
+python3 number_identification.py
+```
