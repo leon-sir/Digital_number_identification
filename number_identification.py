@@ -23,6 +23,7 @@ manual_bboxes = [
     [452, 426, 171, 222],  # 数字 8
     [617, 426, 171, 223],  # 数字 9
     [782, 426, 171, 223],  # 数字 0
+    [899, 520, 32, 32],    # 小数点
 ]
 
 
@@ -63,7 +64,8 @@ def prepocess_template(img):
     img_with_groups = img.copy()
     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), 
               (255, 255, 0), (255, 0, 255), (0, 255, 255),
-              (128, 0, 0), (0, 128, 0), (0, 0, 128), (128, 128, 0)]
+              (128, 0, 0), (0, 128, 0), (0, 0, 128), (128, 128, 0),
+              (0, 128, 128)]  # 新增小数点的颜色
 
     # 创建数字模板字典
     digits_dict = {}
@@ -81,12 +83,19 @@ def prepocess_template(img):
         # 绘制属于该数字的轮廓
         cv.drawContours(img_with_groups, group, -1, color, 1)
 
+        # 根据索引确定标记内容
+        if i < 9:
+            label = str(i + 1)  # 数字1-9
+        elif i == 9:
+            label = '0'  # 数字0
+        else:
+            label = '.'  # 小数点
+
         # 标记数字编号
-        digit_number = i + 1 if i < 9 else 0
-        cv.putText(img_with_groups, str(digit_number), 
+        cv.putText(img_with_groups, label, 
                    (int(x - w/2) + 5, int(y - h/2) + 15), 
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-
+        
         # 为每个数字创建模板
         if group:
             # 创建一个与边界框相同大小的空白图像
@@ -98,19 +107,32 @@ def prepocess_template(img):
                 offset_cnt = cnt - [int(x - w/2), int(y - h/2)]
                 cv.drawContours(digit_template, [offset_cnt], -1, 255, -1)  # 填充轮廓
 
-            # 调整模板大小并存储
-            digit_template = cv.resize(digit_template, (57, 88))
-            digits_dict[digit_number] = digit_template
+            # 根据是否为小数点调整模板大小
+            if i == 10:  # 小数点使用原始尺寸
+                digit_template = cv.resize(digit_template, (32, 32))
+            else:  # 数字使用标准尺寸
+                digit_template = cv.resize(digit_template, (57, 88))
 
-    # cv_show('4. Grouped Contours with Manual BBoxes', img_with_groups, 0)     # 显示分组结果
+            # 存储模板，对小数点使用特殊键值'.'
+            if i < 9:
+                digits_dict[i + 1] = digit_template
+            elif i == 9:
+                digits_dict[0] = digit_template
+            else:
+                digits_dict['.'] = digit_template
 
-    print("\n 模板数字分组结果统计:")    # 打印分组统计
+
+    cv_show('4. Grouped Contours with Manual BBoxes', img_with_groups, 0)     # 显示分组结果
+
+    print("\n模板数字分组结果统计:")    
     for i, group in enumerate(digit_groups):
-        digit_number = i + 1 if i < 9 else 0
-        print(f"段码数字 {digit_number}: {len(group)} 个轮廓")
-
-    # for digit, template in digits_dict.items():       # 显示数字模板
-    #     cv_show(f'Digit {digit} Template', template, 0)
+        if i < 9:
+            label = f"段码数字 {i + 1}"
+        elif i == 9:
+            label = "段码数字 0"
+        else:
+            label = "小数点"
+        print(f"{label}: {len(group)} 个轮廓")
 
     return digit_groups, digits_dict
 
@@ -253,26 +275,26 @@ def improved_template_matching(roi_binary, digits_dict, manual_centers=None):
     """
     # 复制图像用于绘制结果
     matched_image = cv.cvtColor(roi_binary, cv.COLOR_GRAY2BGR)
-    
+
     # 查找所有轮廓（不进行形态学连接操作）
     contours, _ = cv.findContours(roi_binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    
+
     # 创建所有轮廓的可视化
     all_contours_img = matched_image.copy()
     cv.drawContours(all_contours_img, contours, -1, (0, 255, 0), 1)
     cv_show('1. All Contours', all_contours_img, 0)
-    
+
     # 打印轮廓数量信息
     print(f"检测到 {len(contours)} 个轮廓")
-    
+
     # 存储轮廓属性
     contour_properties = []
-    
+
     for cnt in contours:
         x, y, w, h = cv.boundingRect(cnt)
         aspect_ratio = w / float(h) if h != 0 else 0
         area = cv.contourArea(cnt)
-        
+
         contour_properties.append({
             'cnt': cnt,
             'x': x, 'y': y, 'w': w, 'h': h,
@@ -280,45 +302,45 @@ def improved_template_matching(roi_binary, digits_dict, manual_centers=None):
             'aspect_ratio': aspect_ratio,
             'center': (x + w/2, y + h/2)
         })
-    
+
     # 使用手动提供的中心点进行分组
     if manual_centers is not None and len(manual_centers) == 4:
         print("使用手动提供的中心点进行分组")
         digit_groups = [[] for _ in range(len(manual_centers))]
-        
+
         for props in contour_properties:
             cx, cy = props['center']
             min_dist = float('inf')
             group_idx = 0
-            
+
             # 找到最近的数字中心
             for i, (center_x, center_y) in enumerate(manual_centers):
                 dist = np.sqrt((cx - center_x)**2 + (cy - center_y)**2)
                 if dist < min_dist:
                     min_dist = dist
                     group_idx = i
-            
+
             digit_groups[group_idx].append(props)
     else:
         print("错误: 需要提供4个手动中心点")
         return [], matched_image, []
-    
+
     # 可视化分组结果
     grouped_image = matched_image.copy()
     colors = [(0, 255, 0), (0, 0, 255), (255, 0, 0), (255, 255, 0)]
-    
+
     # 绘制手动中心点
     for i, (cx, cy) in enumerate(manual_centers):
         cv.circle(grouped_image, (int(cx), int(cy)), 3, colors[i], -1)
         cv.putText(grouped_image, f"Center {i}", (int(cx)+5, int(cy)), 
                   cv.FONT_HERSHEY_SIMPLEX, 0.4, colors[i], 1)
-    
+
     for i, group in enumerate(digit_groups):
         color = colors[i % len(colors)]
         for props in group:
             x, y, w, h = props['x'], props['y'], props['w'], props['h']
             cv.rectangle(grouped_image, (x, y), (x+w, y+h), color, 1)
-        
+
         # 计算组的边界框
         if group:
             min_x = min(props['x'] for props in group)
@@ -328,9 +350,9 @@ def improved_template_matching(roi_binary, digits_dict, manual_centers=None):
             cv.rectangle(grouped_image, (min_x, min_y), (max_x, max_y), color, 2)
             cv.putText(grouped_image, f"Group {i}", (min_x, min_y-5), 
                       cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-    
+
     cv_show('2. Grouped Contours with Manual Centers', grouped_image, 0)
-    
+
     # 为每个数字创建完整的二值图像
     digit_regions = []
     recognized_digits = []
@@ -412,12 +434,14 @@ def main():
     # video_to_frames(video_path, output_folder, start_time=30, end_time=60)
 
     """ extract number contour from template  """
-    img = cv.imread("template/Segment_digital_tube_number.png")
+    img = cv.imread("template/Segment_digital_tube_number_with_dot.png")
     # cv_show('template', img, 2)
 
     # digit_groups(list)储存数字和轮廓, digits_dict(dict)存储数字(key))和对应的模板图像(value)
     digit_groups, digits_dict = prepocess_template(img)
-    # cv_show(f'Digit {5} Template', digits_dict[5], 0)
+    cv_show(f'Digit {5} Template', digits_dict[5], 0)
+    cv_show(f'Digit {9} Template', digits_dict[9], 0)
+    cv_show(f'Dot', digits_dict['.'], 0)
 
     print("extract number contour from template successfully")
 
