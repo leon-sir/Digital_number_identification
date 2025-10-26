@@ -18,6 +18,7 @@
 !.vscode
 
 # Outputs
+**output_frames/*
 **/runs/*
 **/logs/*
 **/recordings/*

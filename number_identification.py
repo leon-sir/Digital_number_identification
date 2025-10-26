@@ -11,7 +11,7 @@ import cv2 as cv
 import numpy as np
 
 
-# RoI: [x,y,w,h], (x, y): center of the number
+# RoI: [x,y,w,h], (x, y): center of the number in temlpate/segment_digital_tube_number_with_dot.png
 manual_bboxes = [
     [123, 167, 171, 222],  # 数字 1
     [288, 167, 171, 222],  # 数字 2
@@ -28,6 +28,27 @@ manual_bboxes = [
 
 
 def prepocess_template(img):
+    # 新增：动态调整并保持宽高比的 resize + pad 函数
+    def resize_and_pad_template(bin_img, target_size):
+        """
+        将二值模板调整到 target_size (height, width)，保持纵横比并用黑(0)填充
+        """
+        th, tw = target_size
+        h, w = bin_img.shape[:2]
+        if h == 0 or w == 0:
+            return np.zeros((th, tw), dtype=np.uint8)
+        scale = min(tw / float(w), th / float(h))
+        new_w, new_h = max(1, int(w * scale)), max(1, int(h * scale))
+        resized = cv.resize(bin_img, (new_w, new_h), interpolation=cv.INTER_NEAREST)
+        pad_w = tw - new_w
+        pad_h = th - new_h
+        top = pad_h // 2
+        bottom = pad_h - top
+        left = pad_w // 2
+        right = pad_w - left
+        padded = cv.copyMakeBorder(resized, top, bottom, left, right, cv.BORDER_CONSTANT, value=0)
+        return padded
+    
     """
     处理七位段码数字,模板从1-9,0
     """
@@ -97,21 +118,48 @@ def prepocess_template(img):
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
         
         # 为每个数字创建模板
-        if group:
-            # 创建一个与边界框相同大小的空白图像
-            digit_template = np.zeros((int(h), int(w)), dtype=np.uint8)
+        shrink_margin = 0.0     # 可调整，越小保留越紧，试试 0.05 ~ 0.20
 
-            # 将轮廓绘制到模板上
+        if group:
+            pts = np.vstack([cnt.reshape(-1, 2) for cnt in group])
+            min_x_abs, min_y_abs = pts.min(axis=0).astype(int)
+            max_x_abs, max_y_abs = pts.max(axis=0).astype(int)
+
+            # 基于手动bbox尺寸决定 padding（避免切掉笔画）
+            pad_px = max(1, int(shrink_margin * max(w, h)))
+
+            crop_min_x = max(0, min_x_abs - pad_px)
+            crop_min_y = max(0, min_y_abs - pad_px)
+            crop_max_x = min(img.shape[1], max_x_abs + pad_px)
+            crop_max_y = min(img.shape[0], max_y_abs + pad_px)
+
+            crop_w = crop_max_x - crop_min_x
+            crop_h = crop_max_y - crop_min_y
+
+            # 创建模板并把轮廓绘制到模板坐标系
+            digit_template = np.zeros((crop_h, crop_w), dtype=np.uint8)
             for cnt in group:
-                # 调整轮廓坐标到模板坐标系
-                offset_cnt = cnt - [int(x - w/2), int(y - h/2)]
+                offset_cnt = cnt - [crop_min_x, crop_min_y]
                 cv.drawContours(digit_template, [offset_cnt], -1, 255, -1)  # 填充轮廓
 
-            # 根据是否为小数点调整模板大小
-            if i == 10:  # 小数点使用原始尺寸
-                digit_template = cv.resize(digit_template, (32, 32))
-            else:  # 数字使用标准尺寸
-                digit_template = cv.resize(digit_template, (57, 88))
+            # # 创建一个与边界框相同大小的空白图像
+            # digit_template = np.zeros((int(h), int(w)), dtype=np.uint8)
+
+            # # 将轮廓绘制到模板上
+            # for cnt in group:
+            #     # 调整轮廓坐标到模板坐标系
+            #     offset_cnt = cnt - [int(x - w/2), int(y - h/2)]
+            #     cv.drawContours(digit_template, [offset_cnt], -1, 255, -1)  # 填充轮廓
+
+            # # 根据是否为小数点调整模板大小
+            # if i == 10:  # 小数点使用原始尺寸
+            #     digit_template = cv.resize(digit_template, (32, 32))
+            # else:  # 数字使用标准尺寸
+            #     digit_template = cv.resize(digit_template, (57, 88))
+            if i == 10:  # 小数点使用 32x32
+                digit_template = resize_and_pad_template(digit_template, (32, 32))
+            else:  # 数字使用标准尺寸 高x宽 = 88x57
+                digit_template = resize_and_pad_template(digit_template, (88, 57))
 
             # 存储模板，对小数点使用特殊键值'.'
             if i < 9:
@@ -120,6 +168,13 @@ def prepocess_template(img):
                 digits_dict[0] = digit_template
             else:
                 digits_dict['.'] = digit_template
+
+    # 显示所有生成的模板（按 1-9, 0, 小数点 顺序）
+    display_order = list(range(1, 10)) + [0, '.']
+    for k in display_order:
+        if k in digits_dict:
+            label = 'Dot' if k == '.' else f'Digit {k} Template'
+            cv_show(label, digits_dict[k], 0)
 
 
     cv_show('4. Grouped Contours with Manual BBoxes', img_with_groups, 0)     # 显示分组结果
@@ -181,82 +236,6 @@ def process_target(image, **kwargs):
     cv_show('gray', roi_binary)
 
     return roi_binary
-
-
-# def template_matching(roi_binary, digits_dict):
-#     """
-#     使用模板匹配识别数字
-    
-#     参数:
-#         roi_binary: 预处理后的二值图像
-#         digits_dict: 数字模板字典
-        
-#     返回:
-#         recognized_digits: 识别出的数字列表
-#         matched_image: 带有匹配结果的图像
-#     """
-#     # 复制图像用于绘制结果
-#     matched_image = cv.cvtColor(roi_binary, cv.COLOR_GRAY2BGR)
-    
-#     # 查找数字轮廓
-#     contours, _ = cv.findContours(roi_binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    
-#     # 过滤轮廓（基于面积和宽高比）
-#     digit_contours = []
-#     for cnt in contours:
-#         x, y, w, h = cv.boundingRect(cnt)
-#         aspect_ratio = w / float(h)
-#         area = cv.contourArea(cnt)
-        
-#         # 根据数字的典型特征过滤
-#         if 0.2 < aspect_ratio < 1.0 and area > 30:
-#             digit_contours.append((cnt, x, y, w, h))
-    
-#     # 按x坐标排序（从左到右）
-#     digit_contours.sort(key=lambda x: x[1])
-    
-#     recognized_digits = []
-#     confidence_scores = []
-    
-#     # 对每个检测到的数字区域进行模板匹配
-#     for i, (cnt, x, y, w, h) in enumerate(digit_contours):
-#         # 提取数字区域
-#         digit_roi = roi_binary[y:y+h, x:x+w]
-        
-#         # 调整大小以匹配模板
-#         digit_roi_resized = cv.resize(digit_roi, (57, 88))
-        
-#         # 初始化最佳匹配和分数
-#         best_match = None
-#         best_score = -float('inf')
-        
-#         # 与每个模板进行匹配
-#         for digit, template in digits_dict.items():
-#             # 确保尺寸匹配
-#             if digit_roi_resized.shape != template.shape:
-#                 digit_roi_resized = cv.resize(digit_roi_resized, (template.shape[1], template.shape[0]))
-            
-#             # 模板匹配
-#             result = cv.matchTemplate(digit_roi_resized, template, cv.TM_CCOEFF_NORMED)
-#             _, score, _, _ = cv.minMaxLoc(result)
-            
-#             # 更新最佳匹配
-#             if score > best_score:
-#                 best_score = score
-#                 best_match = digit
-        
-#         # 记录识别结果
-#         recognized_digits.append(best_match)
-#         confidence_scores.append(best_score)
-        
-#         # 在图像上绘制结果
-#         cv.rectangle(matched_image, (x, y), (x+w, y+h), (0, 255, 0), 2)
-#         cv.putText(matched_image, f"{best_match}({best_score:.2f})", 
-#                   (x, y-10), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-        
-#         print(f"数字 {i+1}: 识别为 {best_match}, 置信度: {best_score:.2f}")
-    
-    # return recognized_digits, matched_image
 
 
 def improved_template_matching(roi_binary, digits_dict, manual_centers=None):
@@ -439,9 +418,7 @@ def main():
 
     # digit_groups(list)储存数字和轮廓, digits_dict(dict)存储数字(key))和对应的模板图像(value)
     digit_groups, digits_dict = prepocess_template(img)
-    cv_show(f'Digit {5} Template', digits_dict[5], 0)
-    cv_show(f'Digit {9} Template', digits_dict[9], 0)
-    cv_show(f'Dot', digits_dict['.'], 0)
+    
 
     print("extract number contour from template successfully")
 

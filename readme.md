@@ -10,7 +10,6 @@ This project is used for turbojet thrusts reader identification
 ```bash
 conda create -n env_cv python=3.10
 
-# my conda env name
 conda activate env_cv
 ```
 
@@ -19,6 +18,10 @@ pip install opencv-python --upgrade
 pip install numpy imutils matplotlib
 ```
 
+```bash
+# Add the project root to PYTHONPATH
+pip install -e .
+```
 
 ## 使用说明
 Firstly, find and record RoI of each segement number on the template:
@@ -35,6 +38,11 @@ Then check if the number is extracted correctly. (轮廓中心在RoI就行)
 <div style="text-align: center;">
   <img src="images/read_me_image2.png" alt="extracted_number" width="800">
 </div>
+
+Find RoI in target images
+```bash
+python3 scripts/find_roi.py --img output_frames/frame_002090.jpg
+```
 
 ## 识别
 ```bash
