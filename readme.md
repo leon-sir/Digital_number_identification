@@ -46,5 +46,19 @@ python3 scripts/find_roi.py --img output_frames/frame_002090.jpg
 
 ## 识别
 ```bash
-python3 number_identification.py
+python3 number_identification_v1.py
+```
+
+
+
+# 其他函数，
+```bash
+# process template to 1-9,0,'dot' group
+python3 scripts/process_template.py
+# convert video to multi image in frames
+python3 scripts/convert_video_2_jpg.py
+# get RoI of single image
+python3 scripts/preprocess_target.py
+# test template matching
+python3 scripts/template_matching.py
 ```

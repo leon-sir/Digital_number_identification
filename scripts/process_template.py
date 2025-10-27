@@ -1,3 +1,10 @@
+# @Author: Zheng Pan
+# @Emial: pan_zheng@nwpu.edu.cn
+# Copyright (c) 2025 Zheng Pan
+# All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import cv2 as cv
 import numpy as np
 from scripts.utils import cv_show, point_in_rect
@@ -88,6 +95,9 @@ def prepocess_template(img):
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
         
         # 为每个数字创建模板
+        size_number = (57, 88)
+        size_dot = (32, 32)
+        
         if group:
             # 创建一个与边界框相同大小的空白图像
             digit_template = np.zeros((int(h), int(w)), dtype=np.uint8)
@@ -100,9 +110,9 @@ def prepocess_template(img):
 
             # 根据是否为小数点调整模板大小
             if i == 10:  # 小数点使用原始尺寸
-                digit_template = cv.resize(digit_template, (32, 32))
+                digit_template = cv.resize(digit_template, size_dot)
             else:  # 数字使用标准尺寸
-                digit_template = cv.resize(digit_template, (57, 88))
+                digit_template = cv.resize(digit_template, size_number)
 
             # 存储模板，对小数点使用特殊键值'.'
             if i < 9:
@@ -112,8 +122,10 @@ def prepocess_template(img):
             else:
                 digits_dict['.'] = digit_template
 
+    print(f"小数点resize为了{size_dot}, 数字resize为了{size_number} \n" \
+            " 当前给定区域size, template_matching时把数字区域也照这个resizing")
 
-    cv_show('4. Grouped Contours with Manual BBoxes', img_with_groups, 0)     # 显示分组结果
+    # cv_show('4. Grouped Contours with Manual BBoxes', img_with_groups, 0)     # 显示分组结果
 
     print("\n模板数字分组结果统计:")    
     for i, group in enumerate(digit_groups):
