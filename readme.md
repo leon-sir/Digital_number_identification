@@ -39,19 +39,25 @@ Then check if the number is extracted correctly. (轮廓中心在RoI就行)
   <img src="images/read_me_image2.png" alt="extracted_number" width="800">
 </div>
 
-Find RoI in target images
+# Find RoI in target images
 ```bash
 python3 scripts/find_roi.py --img output_frames/frame_002090.jpg
 ```
 
-## 识别
+
+
+针对每个视频，主要修改preprocess_target()的 显示屏的框和旋转角度：
+box = [633, 225, 75, 37]
+angle = -4
+其余以进行标准化处理(预处理为100*50像素的图像，可能需要根据亮度微调threshold)
+
+## 最后进行识别
 ```bash
 python3 number_identification_v1.py
 ```
 
 
-
-# 其他函数，
+#### 其他函数，
 ```bash
 # process template to 1-9,0,'dot' group
 python3 scripts/process_template.py

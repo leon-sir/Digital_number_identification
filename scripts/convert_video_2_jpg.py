@@ -19,6 +19,7 @@ def video_to_frames(video_path, output_folder, prefix='frame', start_time=0, end
         prefix (str): 输出图片的前缀名
         start_time (float): 开始时间秒,默认为0
         end_time (float): 结束时间(秒),默认为None(视频结尾）
+        frame_interval (int): 帧间隔,默认为10(每10帧保存一张图片)
     """
     # 创建输出文件夹（如果不存在）
     if not os.path.exists(output_folder):
@@ -34,6 +35,7 @@ def video_to_frames(video_path, output_folder, prefix='frame', start_time=0, end
 
     # 获取视频属性[1,2](@ref)
     fps = cap.get(cv.CAP_PROP_FPS)  # 帧率
+    print("视频的帧率 (FPS):", fps)
     total_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT))  # 总帧数
     duration = total_frames / fps  # 视频总时长（秒）
 
@@ -85,17 +87,11 @@ def video_to_frames(video_path, output_folder, prefix='frame', start_time=0, end
 
 # 使用示例
 if __name__ == "__main__":
-    video_path = "test_record/1437485690.mp4"  # 替换为你的视频路径
+    video_path = "test_record/turbojet_test_2025-1024-1413.mp4"  # 输入视频
     output_folder = "output_frames"  # 输出文件夹名称
     
     # 示例1: 提取整个视频
     # video_to_frames(video_path, output_folder)
     
-    # 示例2: 提取从第10秒到第30秒的帧
-    video_to_frames(video_path, output_folder, start_time=1, end_time=3)
-    
-    # 示例3: 提取从第5秒到视频结尾
-    # video_to_frames(video_path, output_folder, start_time=5)
-    
-    # 示例4: 自定义前缀名
-    # video_to_frames(video_path, output_folder, prefix="my_video", start_time=15, end_time=45)
+    # 示例2: 提取从第0秒到第3秒的帧
+    video_to_frames(video_path, output_folder, start_time=0, end_time=1)
