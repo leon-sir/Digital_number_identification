@@ -15,6 +15,7 @@ def preprocess_target(image, **kwargs):
 
     参数:
         image: 输入图像
+        !!注意,返回的二值化图像w,h固定为100x50
         **kwargs: 可选参数，包括:
             - bbox: 边界框 [x, y, w, h]
             - angle: 旋转角度
@@ -71,3 +72,5 @@ if __name__ == "__main__":
     angle = -4
     roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=150)  # 160 
     cv_show('Processed ROI Binary', roi_binary)
+
+    
