@@ -20,8 +20,8 @@ import shutil
 
 DEBUG=0
 
-def clear_current_folder():
-    current_dir = "output_frames"    # 获取当前工作目录
+def clear_output_folder():
+    current_dir = "output_frames"    # 获取储存目录
     
     for filename in os.listdir(current_dir):
         file_path = os.path.join(current_dir, filename)
@@ -46,7 +46,7 @@ def recognized_digits_number(recognized_digits, dot_flags):
         return None  # 或 "识别失败"
     # 拼接字符串，插入小数点
     result = ""
-    
+
     for i, digit in enumerate(recognized_digits):
         result += str(digit)
 
@@ -58,34 +58,51 @@ def recognized_digits_number(recognized_digits, dot_flags):
     return num
 
 
+""" 主程序入口 """
+import csv
+import argparse
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data", type=str, default="test_record/turbojet_test_2025-1024-1413.mp4", help="Path of data files")
+    parser.add_argument("--output", type=str, default="output/turbojet_test_data.csv", help="Path to save the data csv")
+    args = parser.parse_args()
+    
 
-    """ convert original data.mp4 to .png """
-    clear_current_folder()
+    """ Step.1. convert original data.mp4 to .png """
+    clear_output_folder()
 
-    video_path = "test_record/turbojet_test_2025-1024-1413.mp4"
+    video_path = args.data
+    # video_path = "test_record/turbojet_test_2025-1024-1413.mp4"
     output_folder = "output_frames"  # 输出文件夹名称
-    FPS = 29 # 我的小米手机录制的视频是29fps，我也不知道为什么不是30
+    FPS = 29 # 我的小米手机录制的视频就是29fps
     frame_interval = 10
     video_to_frames(video_path, output_folder, start_time=0, end_time=None,frame_interval=frame_interval)
 
-    """ extract number contour from template """
+    """Step.2.  extract number contour from template """
     img = cv.imread("template/Segment_digital_tube_number_with_dot.png")
 
     digit_groups, digits_dict = prepocess_template(img)
     print("extract number contour from template successfully")
 
 
-    """ preprocess target image to get roi_binary """
+    """ Step.3. preprocess target image to get roi_binary """
     box = [633, 225, 75, 37]
     angle = -4
 
-    """template matching"""
+    """ Step.4. template matching"""
     manual_centers = [(12, 26), (37, 26), (62, 26), (88, 26)]   # 长宽已插值为100x50
-    # 长宽已插值为100x50, size_number=(23,40)
     roiSize_of_digital_number = (22, 40)
+
+    # outputfile = "turbojet_test_data.csv"
+    outputfile = args.output
+    header = ["time", "forces"]
+    os.makedirs(os.path.dirname(outputfile), exist_ok=True)
+    with open(outputfile, mode='w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+    print(f"[INFO] CSV 文件已创建: {outputfile}")
 
     input_folder = "output_frames"
     patterns = ['*.jpg', '*.jpeg', '*.png']
@@ -132,7 +149,15 @@ def main():
                   (30, 100), cv.FONT_HERSHEY_SIMPLEX, 3, [0,0,255], 3)
         cv.putText(recorder_image_copy, f"video time {video_time}", 
                   (30, 200), cv.FONT_HERSHEY_SIMPLEX, 3, [0,0,255], 3)
-        cv_show("recorder_image",recorder_image_copy)
+        if DEBUG:
+            cv_show("recorder_image",recorder_image_copy)
+
+        row = [f"{video_time:.2f}", f"{number if number is not None else '识别失败'}"]
+        # Append to CSV
+        with open(outputfile, mode='a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(row)
+
         out_name = f"{stem}_matched.png"
         out_path = os.path.join(input_folder, out_name)
 
