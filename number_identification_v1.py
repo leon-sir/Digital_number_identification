@@ -18,10 +18,16 @@ import os
 import glob
 import shutil
 
+
 DEBUG=0
+
 
 def clear_output_folder():
     current_dir = "output_frames"    # 获取储存目录
+
+    if not os.path.exists(current_dir):
+            print(f"文件夹 {current_dir} 不存在，无需清空")
+            return
     
     for filename in os.listdir(current_dir):
         file_path = os.path.join(current_dir, filename)
