@@ -59,6 +59,8 @@ python3 number_identification_v1.py --data test_record/turbojet_test_2025-1024-1
 
 #### 其他函数，
 ```bash
+# clear output folder
+python3 scripts/clear_output_folder.py
 # process template to 1-9,0,'dot' group
 python3 scripts/process_template.py
 # convert video to multi image in frames

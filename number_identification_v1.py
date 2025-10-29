@@ -13,6 +13,8 @@ from scripts.process_template import prepocess_template
 import cv2 as cv
 import numpy as np
 from scripts.template_matching import improved_template_matching, find_dot
+from scripts.clear_output_folder import clear_output_folder
+
 
 import os
 import glob
@@ -22,25 +24,25 @@ import shutil
 DEBUG=0
 
 
-def clear_output_folder():
-    current_dir = "output_frames"    # 获取储存目录
+# def clear_output_folder():
+#     current_dir = "output_frames"    # 获取储存目录
 
-    if not os.path.exists(current_dir):
-            print(f"文件夹 {current_dir} 不存在，无需清空")
-            return
+#     if not os.path.exists(current_dir):
+#             print(f"文件夹 {current_dir} 不存在，无需清空")
+#             return
     
-    for filename in os.listdir(current_dir):
-        file_path = os.path.join(current_dir, filename)
+#     for filename in os.listdir(current_dir):
+#         file_path = os.path.join(current_dir, filename)
         
-        try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)  # 删除文件或符号链接
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)  # 递归删除子文件夹
-        except Exception as e:
-            print(f'删除 {file_path} 时出错: {e}')
+#         try:
+#             if os.path.isfile(file_path) or os.path.islink(file_path):
+#                 os.unlink(file_path)  # 删除文件或符号链接
+#             elif os.path.isdir(file_path):
+#                 shutil.rmtree(file_path)  # 递归删除子文件夹
+#         except Exception as e:
+#             print(f'删除 {file_path} 时出错: {e}')
     
-    print("当前文件夹内容已清空")
+#     print("当前文件夹内容已清空")
 
 
 def recognized_digits_number(recognized_digits, dot_flags):
