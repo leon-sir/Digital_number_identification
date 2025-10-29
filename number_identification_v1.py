@@ -73,7 +73,7 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=str, default="test_record/turbojet_test_2025-1024-1413.mp4", help="Path of data files")
+    parser.add_argument("--data", type=str, default="test_record/my_data/turbojet_test_2025-1028-2110.mp4", help="Path of data files")
     parser.add_argument("--output", type=str, default="output/turbojet_test_data.csv", help="Path to save the data csv")
     args = parser.parse_args()
     
@@ -85,8 +85,10 @@ def main():
     # video_path = "test_record/turbojet_test_2025-1024-1413.mp4"
     output_folder = "output_frames"  # 输出文件夹名称
     FPS = 29 # 我的小米手机录制的视频就是29fps
-    frame_interval = 10
-    video_to_frames(video_path, output_folder, start_time=0, end_time=None,frame_interval=frame_interval)
+    frame_interval = 1
+    start_time = 120
+    end_time = 180
+    video_to_frames(video_path, output_folder, start_time=start_time, end_time=end_time,frame_interval=frame_interval)
 
     """Step.2.  extract number contour from template """
     img = cv.imread("template/Segment_digital_tube_number_with_dot.png")
@@ -96,8 +98,10 @@ def main():
 
 
     """ Step.3. preprocess target image to get roi_binary """
-    box = [633, 225, 75, 37]
-    angle = -4
+    box = [780, 145, 250, 125]
+    angle = -1.5
+    threshold = 110
+    # roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=150)
 
     """ Step.4. template matching"""
     manual_centers = [(12, 26), (37, 26), (62, 26), (88, 26)]   # 长宽已插值为100x50
@@ -120,7 +124,7 @@ def main():
     files = sorted(files)
 
     for idx, fp in enumerate(files, 1):
-        video_time = idx*frame_interval/FPS    # 计算时间
+        video_time = start_time + idx*frame_interval/FPS    # 计算时间
 
         fname = os.path.basename(fp)
         stem, _ = os.path.splitext(fname)
@@ -132,7 +136,7 @@ def main():
             print(f"  Failed to read {fp}, skip.")
             continue
 
-        roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=150)
+        roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=threshold)
 
         if DEBUG:
             cv_show('Processed ROI Binary', roi_binary, 0)

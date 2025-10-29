@@ -60,17 +60,19 @@ def preprocess_target(image, **kwargs):
 
 
 if __name__ == "__main__":
-    # recorder_image = cv.imread("images/test_old_frame_001340.jpg")
-    # cv_show('Original Image', recorder_image)
-    # box = [258, 245, 86, 37]
-    # roi_binary = preprocess_target(recorder_image, bbox=box, angle=-15, threshold=140)
-    # cv_show('Processed ROI Binary', roi_binary)
 
-    recorder_image = cv.imread("images/test_1024_frame_002090.jpg")
-    cv_show('Original Image', recorder_image)
-    box = [633, 225, 74, 37]
-    angle = -4
-    roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=150)  # 160 
-    cv_show('Processed ROI Binary', roi_binary)
+    if 1:
+        recorder_image = cv.imread("images/test_old_frame_001340.jpg")
+        cv_show('Original Image', recorder_image)
+        box = [258, 245, 86, 37]
+        roi_binary = preprocess_target(recorder_image, bbox=box, angle=-15, threshold=140)
+        cv_show('Processed ROI Binary', roi_binary)
+    else:
+        recorder_image = cv.imread("output_frames/frame_005120.jpg")
+        cv_show('Original Image', recorder_image)
+        box = [780, 140, 250, 125]
+        angle = -1.5
+        roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=110)  # 160 
+        cv_show('Processed ROI Binary', roi_binary)
 
     

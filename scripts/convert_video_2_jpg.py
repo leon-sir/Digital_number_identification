@@ -87,7 +87,11 @@ def video_to_frames(video_path, output_folder, prefix='frame', start_time=0, end
 
 # 使用示例
 if __name__ == "__main__":
-    video_path = "test_record/turbojet_test_2024-1029-2110.mp4"  # 输入视频
+    if 1:
+        video_path = "test_record/turbojet_test_2025-1024-1413.mp4"  # 输入视频
+    else:
+        video_path = "test_record/my_data/turbojet_test_2025-1028-2110.mp4"  # 输入视频
+        
     output_folder = "output_frames"  # 输出文件夹名称
     
     # 示例1: 提取整个视频

@@ -31,7 +31,7 @@ def main():
         "--img",
         type=str,
         # required=True,
-        default="template/Segment_digital_tube_number.png",
+        default="output_frames/frame_003660.jpg",
         help="imput the image path. for example: python click_bbox.py --img template/Segment_digital_tube_number.png"
     )
     args = parser.parse_args()

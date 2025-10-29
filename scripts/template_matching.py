@@ -11,6 +11,7 @@ from scripts.preprocess_target import preprocess_target
 import cv2 as cv
 import numpy as np
 
+
 DEBUG=0
 
 def improved_template_matching(roi_binary, digits_dict, manual_centers=None,
@@ -506,15 +507,22 @@ def find_dot(roi_binary, manual_dot_centers=None, size_dot=None):
 
 if __name__ == "__main__":
 
-    img = cv.imread("template/Segment_digital_tube_number_with_dot.png")
-    digit_groups, digits_dict = prepocess_template(img)
+    if 1:
+        img = cv.imread("template/Segment_digital_tube_number_with_dot.png")
+        digit_groups, digits_dict = prepocess_template(img)
 
-    # recorder_image = cv.imread("images/test_1024_frame_002090.jpg")
-    recorder_image = cv.imread("output_frames/frame_000000.jpg")
-    
-    box = [633, 225, 75, 37]
-    angle = -4
-    roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=150)
+        recorder_image = cv.imread("images/test_1024_frame_002090.jpg")
+        # recorder_image = cv.imread("output_frames/frame_000000.jpg")
+        box = [633, 225, 75, 37]
+        angle = -4
+        roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=150)
+    else:
+        recorder_image = cv.imread("output_frames/frame_005120.jpg")
+
+        box = [780, 145, 250, 125]
+        angle = -1.5
+        threshold = 110
+        roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=threshold)
 
 
     print("\n尝试改进的模板匹配...")
