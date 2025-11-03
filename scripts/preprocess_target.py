@@ -39,7 +39,6 @@ def preprocess_target(image, **kwargs):
     center = (x, y)  # 记录仪RoI作为旋转中心
 
     M = cv.getRotationMatrix2D(center, angle, 1.0)
-    print(image.shape)
 
     rotated_full_image = cv.warpAffine(image, M, [image.shape[1], image.shape[0]])
     # cv_show('Rotated Full Image', rotated_full_image)

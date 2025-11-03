@@ -24,25 +24,6 @@ import shutil
 DEBUG=0
 
 
-# def clear_output_folder():
-#     current_dir = "output_frames"    # 获取储存目录
-
-#     if not os.path.exists(current_dir):
-#             print(f"文件夹 {current_dir} 不存在，无需清空")
-#             return
-    
-#     for filename in os.listdir(current_dir):
-#         file_path = os.path.join(current_dir, filename)
-        
-#         try:
-#             if os.path.isfile(file_path) or os.path.islink(file_path):
-#                 os.unlink(file_path)  # 删除文件或符号链接
-#             elif os.path.isdir(file_path):
-#                 shutil.rmtree(file_path)  # 递归删除子文件夹
-#         except Exception as e:
-#             print(f'删除 {file_path} 时出错: {e}')
-    
-#     print("当前文件夹内容已清空")
 
 
 def recognized_digits_number(recognized_digits, dot_flags):
@@ -64,7 +45,11 @@ def recognized_digits_number(recognized_digits, dot_flags):
     elif dot_flags[1]:
         num = num / 100
     return num
-
+# def confidence_scores_number(confidence_scores):
+#     for i, digit in enumerate(confidence_scores):
+#         result += str(digit)
+#     num_scores = int(result)
+#     return num_scores
 
 """ 主程序入口 """
 import csv
@@ -86,10 +71,37 @@ def main():
     output_folder = "output_frames"  # 输出文件夹名称
     FPS = 29 # 我的小米手机录制的视频就是29fps
     frame_interval = 1
-    start_time = 120
-    end_time = 180
-    video_to_frames(video_path, output_folder, start_time=start_time, end_time=end_time,frame_interval=frame_interval)
+    """
+    第一段: 38-262s   
+    box = [780, 145, 250, 125]  
+    angle = -1.5  threshold = 110  
+    manual_centers = [(12, 26), (37, 26), (62, 26), (88, 26)]  
+    roiSize_of_digital_number = (22, 40)  
+    manual_dot_centers = [(24, 41), (48, 41)]
+    第二段： 262-262.5
+    box = [782.0, 146.0, 248, 138]
+    angle = -1  threshold = 110
+    manual_centers = [(11, 25), (36, 25), (61, 25), (87, 25)]
+    roiSize_of_digital_number = (22, 40)
+    manual_dot_centers = [(22, 40), (47, 40)] 
+    第三段： 262.5-
+    box = [786.5, 151.0, 249, 140]
+    angle = -1  threshold = 110
+    manual_centers = [(11, 25), (36, 25), (61, 25), (87, 25)]
+    roiSize_of_digital_number = (22, 40)
+    manual_dot_centers = [(22, 40), (47, 40)]
+    第四段: 263s-
+    box = [787.0, 162.5, 252, 143]
+    angle = -2  threshold = 120
+    manual_centers = [(11, 25), (36, 25), (61, 25), (86, 25)]
+    roiSize_of_digital_number = (20, 38)
+    manual_dot_centers = [(22, 40), (47, 40)]
+    """
 
+    start_time = 263
+    end_time = None
+    video_to_frames(video_path, output_folder, start_time=start_time, end_time=end_time,frame_interval=frame_interval)
+    
     """Step.2.  extract number contour from template """
     img = cv.imread("template/Segment_digital_tube_number_with_dot.png")
 
@@ -98,23 +110,25 @@ def main():
 
 
     """ Step.3. preprocess target image to get roi_binary """
-    box = [780, 145, 250, 125]
-    angle = -1.5
-    threshold = 110
+    box = [787.0, 162.5, 252, 143]
+    angle = -2
+    threshold = 120
     # roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=150)
 
     """ Step.4. template matching"""
-    manual_centers = [(12, 26), (37, 26), (62, 26), (88, 26)]   # 长宽已插值为100x50
+    manual_centers = [(11, 25), (36, 25), (61, 25), (87, 25)]  # 长宽已插值为100x50
     roiSize_of_digital_number = (22, 40)
 
     # outputfile = "turbojet_test_data.csv"
     outputfile = args.output
-    header = ["time", "forces"]
+    header = ["time", "forces", "confidence_scores_1","confidence_scores_2","confidence_scores_3","confidence_scores_4"]
     os.makedirs(os.path.dirname(outputfile), exist_ok=True)
     with open(outputfile, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(header)
     print(f"[INFO] CSV 文件已创建: {outputfile}")
+
+
 
     input_folder = "output_frames"
     patterns = ['*.jpg', '*.jpeg', '*.png']
@@ -142,7 +156,7 @@ def main():
             cv_show('Processed ROI Binary', roi_binary, 0)
 
         try:
-            recognized_digits, matched_image, digit_regions = improved_template_matching(
+            recognized_digits, matched_image, digit_regions, num_scores = improved_template_matching(
                 roi_binary, digits_dict, manual_centers=manual_centers, size_number=roiSize_of_digital_number)
         except Exception as e:
             print(f"  Error running improved_template_matching on {fname}: {e}")
@@ -151,10 +165,13 @@ def main():
         if matched_image is None:
             print(f"  No matched_image returned for {fname}, skip saving.")
             continue
-        
-        dot_flags = find_dot(roi_binary, manual_dot_centers = [(24, 44), (48, 44)], size_dot=(2,2))
+
+        manual_dot_centers = [(22, 40), (47, 40)]  
+        dot_flags = find_dot(roi_binary, manual_dot_centers = manual_dot_centers, size_dot=(2,2))
         number = recognized_digits_number(recognized_digits, dot_flags)
         print(f"recognized_digits_number={number}")
+        # num_scores = confidence_scores_number(num_scores)
+        print(f"confidence_scores_number={num_scores}")
 
         # 记录数字和时间到图像
         cv.putText(recorder_image_copy, f"number: {number}", 
@@ -164,7 +181,14 @@ def main():
         if DEBUG:
             cv_show("recorder_image",recorder_image_copy)
 
-        row = [f"{video_time:.2f}", f"{number if number is not None else '识别失败'}"]
+        row = [f"{video_time:.2f}", f"{number if number is not None else '识别失败'}"
+            #    ,f"{num_scores if num_scores is not None else '识别失败'}"
+               ]
+        # for scores in enumerate(num_scores):
+        #     row.append(scores[1])
+        # row.append(scores in enumerate(num_scores))
+        row.extend(num_scores) 
+        # row.append(num_scores[:] in enumerate(header[2:]))
         # Append to CSV
         with open(outputfile, mode='a', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)

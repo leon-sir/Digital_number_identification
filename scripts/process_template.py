@@ -11,7 +11,7 @@ from scripts.utils import cv_show, point_in_rect
 
 # RoI: [x,y,w,h], (x, y): center of the number
 
-
+DEBUG = 0
 
 def prepocess_template(img):
     """
@@ -28,22 +28,25 @@ def prepocess_template(img):
         [618, 167, 171, 222],  # 数字 4
         [782, 167, 171, 222],  # 数字 5
         [121, 426, 171, 222],  # 数字 6
-        [289, 426, 171, 222],  # 数字 7
+        [292, 420, 171, 222],  # 数字 7
         [452, 426, 171, 222],  # 数字 8
         [617, 426, 171, 223],  # 数字 9
         [782, 426, 171, 223],  # 数字 0
     ]
 
     ref = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    # cv_show('1. gry template', ref, 2)    # 显示灰度图
+    if DEBUG:
+        cv_show('1. gry template', ref, 2)    # 显示灰度图
 
     _, ref_binary = cv.threshold(ref, 80, 255, cv.THRESH_BINARY)
-    # cv_show('2. Binary Image (After Thresholding)', ref_binary, 2) # 显示二值化后的效果，此时数字应为纯白，背景为纯黑
+    if DEBUG:
+        cv_show('2. Binary Image (After Thresholding)', ref_binary, 2) # 显示二值化后的效果，此时数字应为纯白，背景为纯黑
 
     # 对模板进行轮廓检测，得到轮廓信息
     refCnts, hierarchy = cv.findContours(ref_binary.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     cv.drawContours(img, refCnts, -1, (0, 255, 255), 2)  # 第一个参数为目标图像
-    # cv_show('3 Contours on Image ', img, 0)
+    if DEBUG:
+        cv_show('3 Contours on Image ', img, 0)
     print("处理模板ing...")
     print(f"检测到 {len(refCnts)} 个轮廓")  # 1-9,0 共49笔
 
@@ -99,6 +102,11 @@ def prepocess_template(img):
         
         # 为每个数字创建模板
         size_number = (57, 88)
+        angle = 1.5
+        center = (size_number[0]//2, size_number[1]//2)  # 图像中心作为旋转中心
+        M = cv.getRotationMatrix2D(center, angle, 1.0)
+
+        # rotated_full_image = cv.warpAffine(img, M, [img.shape[1], img.shape[0]])
 
         if group:
             # 创建一个与边界框相同大小的空白图像
@@ -112,7 +120,7 @@ def prepocess_template(img):
 
 
             digit_template = cv.resize(digit_template, size_number)
-
+            digit_template = cv.warpAffine(digit_template, M, [digit_template.shape[1], digit_template.shape[0]])
             # 存储模板，对小数点使用特殊键值'.'
             if i < 9:
                 digits_dict[i + 1] = digit_template
@@ -123,7 +131,8 @@ def prepocess_template(img):
     print(f"数字resize为了{size_number} \n" \
             "当前给定区域size, template_matching时把数字区域也照这个resizing")
 
-    # cv_show('4. Grouped Contours with Manual BBoxes', img_with_groups, 0)     # 显示分组结果
+    if DEBUG:
+        cv_show('4. Grouped Contours with Manual BBoxes', img_with_groups, 0)     # 显示分组结果
 
     print("\n 模板数字分组结果统计:")    
     for i, group in enumerate(digit_groups):
@@ -269,7 +278,7 @@ def prepocess_template_with_dot(img):
 
 
 if __name__ == "__main__":
-    if 1:
+    if 0:
         img = cv.imread("template/Segment_digital_tube_number_with_dot.png")
         # cv_show('template', img, 2)
         digit_groups, digits_dict = prepocess_template_with_dot(img)     
@@ -282,5 +291,5 @@ if __name__ == "__main__":
         # cv_show('template', img, 2)
         digit_groups, digits_dict = prepocess_template(img)
 
-        cv_show(f'Digit {5} Template', digits_dict[5], 0)
-        cv_show(f'Digit {9} Template', digits_dict[9], 0)
+        cv_show(f'Digit {5} Template', digits_dict[1], 0)
+        cv_show(f'Digit {9} Template', digits_dict[7], 0)

@@ -53,7 +53,7 @@ angle = -4
 
 ## 最后进行识别
 ```bash
-python3 number_identification_v1.py --data test_record/turbojet_test_2025-1024-1413.mp4 --output output/turbojet_test_data.csv
+python3 number_identification_v1.py --data test_record/my_data/turbojet_test_2025-1028-2110.mp4 --output output/turbojet_test_data.csv
 ```
 
 

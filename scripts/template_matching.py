@@ -14,6 +14,7 @@ import numpy as np
 
 DEBUG=0
 
+
 def improved_template_matching(roi_binary, digits_dict, manual_centers=None,
                                 size_number=None):
     """
@@ -33,6 +34,7 @@ def improved_template_matching(roi_binary, digits_dict, manual_centers=None,
     """
     # 复制图像用于绘制结果
     matched_image = cv.cvtColor(roi_binary, cv.COLOR_GRAY2BGR)
+
 
     # 查找所有轮廓（不进行形态学连接操作）
     contours, _ = cv.findContours(roi_binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -217,7 +219,7 @@ def improved_template_matching(roi_binary, digits_dict, manual_centers=None,
         cv_show('4. Final Matching Result', matched_image, 0)
     if DEBUG:
         cv_show('5. Final grouped Result', grouped_image, 0)
-    return recognized_digits, grouped_image, digit_regions
+    return recognized_digits, grouped_image, digit_regions, confidence_scores
     # return recognized_digits, matched_image, digit_regions
 
 
@@ -485,7 +487,10 @@ def find_dot(roi_binary, manual_dot_centers=None, size_dot=None):
     
     if manual_dot_centers is None or size_dot is None:
         return []
-
+    
+    roi_binary_test = roi_binary.copy()
+    roi_binary_test = cv.cvtColor(roi_binary_test, cv.COLOR_GRAY2BGR)
+    
     dot_flags = []
     w_dot, h_dot = int(size_dot[0]), int(size_dot[1])
     for (cx, cy) in manual_dot_centers:
@@ -502,38 +507,45 @@ def find_dot(roi_binary, manual_dot_centers=None, size_dot=None):
         # 判断区域内是否有白色像素（即有小数点）
         has_dot = np.count_nonzero(roi) > 0
         dot_flags.append(has_dot)
+
+        if DEBUG:
+            
+            cv.rectangle(roi_binary_test, (min_x, min_y), (max_x, max_y), (255, 255, 0), 2)
+            cv_show("Dot ROI", roi_binary_test, 0)
+
     return dot_flags
 
 
 if __name__ == "__main__":
+    img = cv.imread("template/Segment_digital_tube_number_with_dot.png")
+    digit_groups, digits_dict = prepocess_template(img)
+    # if 0:
+        
 
-    if 1:
-        img = cv.imread("template/Segment_digital_tube_number_with_dot.png")
-        digit_groups, digits_dict = prepocess_template(img)
+    #     recorder_image = cv.imread("output_frames/frame_005219.jpg")
+    #     # recorder_image = cv.imread("output_frames/frame_000000.jpg")
+    #     box = [633, 225, 75, 37]
+    #     angle = -4
+    #     roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=150)
+    # else:
+    
+    recorder_image = cv.imread("output_frames/frame_007627.jpg")
 
-        recorder_image = cv.imread("images/test_1024_frame_002090.jpg")
-        # recorder_image = cv.imread("output_frames/frame_000000.jpg")
-        box = [633, 225, 75, 37]
-        angle = -4
-        roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=150)
-    else:
-        recorder_image = cv.imread("output_frames/frame_005120.jpg")
-
-        box = [780, 145, 250, 125]
-        angle = -1.5
-        threshold = 110
-        roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=threshold)
+    box = [787.0, 162.5, 252, 143]
+    angle = -2
+    threshold = 120
+    roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=threshold)
 
 
     print("\n尝试改进的模板匹配...")
-    manual_centers = [(12, 26), (37, 26), (62, 26), (88, 26)]   # 长宽已插值为100x50
+    manual_centers = [(11, 25), (36, 25), (61, 25), (86, 25)]   # 长宽已插值为100x50
     # 长宽已插值为100x50, size_number=(23,40)
-    roiSize_of_digital_number = (23, 40)
-    recognized_digits_improved, matched_image_improved, digit_regions = improved_template_matching(
+    roiSize_of_digital_number = (20, 38)
+    recognized_digits_improved, matched_image_improved, digit_regions, _ = improved_template_matching(
         roi_binary, digits_dict, manual_centers=manual_centers, size_number=roiSize_of_digital_number)
     
 
-    manual_dot_centers = [(24, 44), (48, 44)]
+    manual_dot_centers = [(22, 40), (47, 40)] 
     # 长宽已插值为100x50, size_number=(23,40), size_dot=(2,2)
     roiSize_of_dot = (2, 2)
 
