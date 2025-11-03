@@ -8,6 +8,7 @@
 from scripts.utils import cv_show
 import cv2 as cv
 
+DEBUG=0
 
 def preprocess_target(image, **kwargs):
     """
@@ -41,20 +42,24 @@ def preprocess_target(image, **kwargs):
     M = cv.getRotationMatrix2D(center, angle, 1.0)
 
     rotated_full_image = cv.warpAffine(image, M, [image.shape[1], image.shape[0]])
-    # cv_show('Rotated Full Image', rotated_full_image)
+    if DEBUG:
+        cv_show('Rotated Full Image', rotated_full_image)
 
     roi_image = rotated_full_image[int(y-h/2):int(y+h/2), int(x-w/2):int(x+w/2)]
-    # cv_show('ROI After Rotation', roi_image)
+    if DEBUG:
+        cv_show('ROI After Rotation', roi_image)
 
     roi_gray = cv.cvtColor(roi_image, cv.COLOR_BGR2GRAY)
-    # cv_show('gray', roi_gray)
+    if DEBUG:
+        cv_show('gray', roi_gray)
 
     """ 边缘提取, threshold由屏幕亮度决定,背景色亮的需要使用 cv.THRESH_BINARY_INV """
     threshold = params['threshold']
     _, roi_binary = cv.threshold(roi_gray, threshold, 255, cv.THRESH_BINARY_INV)
     # cv_show('gray', roi_binary)
     roi_binary = cv.resize(roi_binary, (100, 50), interpolation=cv.INTER_NEAREST)
-    # cv_show('gray', roi_binary)
+    if DEBUG:
+        cv_show('gray', roi_binary)
     return roi_binary
 
 

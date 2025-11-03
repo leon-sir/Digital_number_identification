@@ -11,19 +11,15 @@ from scripts.preprocess_target import preprocess_target
 # from scripts import sort_contours, point_in_rect, my_resize  # noqa: F401
 from scripts.process_template import prepocess_template
 import cv2 as cv
-import numpy as np
 from scripts.template_matching import improved_template_matching, find_dot
 from scripts.clear_output_folder import clear_output_folder
 
 
 import os
 import glob
-import shutil
 
 
 DEBUG=0
-
-
 
 
 def recognized_digits_number(recognized_digits, dot_flags):
@@ -58,6 +54,7 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser()
+
     parser.add_argument("--data", type=str, default="test_record/my_data/turbojet_test_2025-1028-2110.mp4", help="Path of data files")
     parser.add_argument("--output", type=str, default="output/turbojet_test_data.csv", help="Path to save the data csv")
     args = parser.parse_args()
@@ -98,8 +95,8 @@ def main():
     manual_dot_centers = [(22, 40), (47, 40)]
     """
 
-    start_time = 263
-    end_time = None
+    start_time = 1
+    end_time = 2
     video_to_frames(video_path, output_folder, start_time=start_time, end_time=end_time,frame_interval=frame_interval)
     
     """Step.2.  extract number contour from template """
@@ -121,7 +118,7 @@ def main():
 
     # outputfile = "turbojet_test_data.csv"
     outputfile = args.output
-    header = ["time", "forces", "confidence_scores_1","confidence_scores_2","confidence_scores_3","confidence_scores_4"]
+    header = ["image_name","time", "forces", "confidence_scores_1","confidence_scores_2","confidence_scores_3","confidence_scores_4"]
     os.makedirs(os.path.dirname(outputfile), exist_ok=True)
     with open(outputfile, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -181,7 +178,7 @@ def main():
         if DEBUG:
             cv_show("recorder_image",recorder_image_copy)
 
-        row = [f"{video_time:.2f}", f"{number if number is not None else '识别失败'}"
+        row = [f"{fp}", f"{video_time:.2f}", f"{number if number is not None else '识别失败'}"
             #    ,f"{num_scores if num_scores is not None else '识别失败'}"
                ]
         # for scores in enumerate(num_scores):

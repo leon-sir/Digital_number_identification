@@ -198,10 +198,22 @@ def improved_template_matching(roi_binary, digits_dict, manual_centers=None,
             result = cv.matchTemplate(digit_resized_resized, template, cv.TM_CCOEFF_NORMED)
             _, score, _, _ = cv.minMaxLoc(result)
             
+            # 创建彩色图像用于重合显示
+            overlap_img = np.zeros((digit_resized_resized.shape[0], digit_resized_resized.shape[1], 3), dtype=np.uint8)
+            # 将原始二值图像放在红色通道
+            overlap_img[:, :, 2] = digit_resized_resized  # 红色通道
+        
+            # 将模板放在绿色通道
+            overlap_img[:, :, 1] = template  # 绿色通道
+            # combined_img = np.hstack((digit_resized_resized, template))
+            
+            if DEBUG:
+                cv_show(f'3. Digit {i} Region', overlap_img, 5)
+
             # 更新最佳匹配
             if score > best_score:
                 best_score = score
-                best_match = digit
+                best_match = digit 
         
         recognized_digits.append(best_match)
         confidence_scores.append(best_score)
@@ -519,21 +531,21 @@ def find_dot(roi_binary, manual_dot_centers=None, size_dot=None):
 if __name__ == "__main__":
     img = cv.imread("template/Segment_digital_tube_number_with_dot.png")
     digit_groups, digits_dict = prepocess_template(img)
-    # if 0:
-        
-
-    #     recorder_image = cv.imread("output_frames/frame_005219.jpg")
-    #     # recorder_image = cv.imread("output_frames/frame_000000.jpg")
-    #     box = [633, 225, 75, 37]
-    #     angle = -4
-    #     roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=150)
-    # else:
     
-    recorder_image = cv.imread("output_frames/frame_007627.jpg")
+    if 1:
+        recorder_image = cv.imread("images/test_1024_frame_002090.jpg")
+        # recorder_image = cv.imread("output_frames/frame_000000.jpg")
+        box = [633, 225, 75, 37]
+        angle = -4
+        threshold = 150
+    else:
+        recorder_image = cv.imread("output_frames/frame_005120.jpg")
 
-    box = [787.0, 162.5, 252, 143]
-    angle = -2
-    threshold = 120
+        box = [780, 145, 250, 125]
+        angle = -1.5
+        threshold = 110
+        
+    
     roi_binary = preprocess_target(recorder_image, bbox=box, angle=angle, threshold=threshold)
 
 
